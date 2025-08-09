@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Такси Онлайн</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+    }
+    header {
+      background: #ffcc00;
+      padding: 15px;
+      text-align: center;
+      font-size: 1.5em;
+      font-weight: bold;
+    }
+    .container {
+      padding: 15px;
+      max-width: 500px;
+      margin: auto;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 1em;
+    }
+    button {
+      background: #ffcc00;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #e6b800;
+    }
+    #map {
+      height: 300px;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+    small {
+      display: block;
+      text-align: center;
+      margin-top: -5px;
+      color: #666;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <header>🚖 Такси Онлайн</header>
+
+  <div class="container">
+    <input type="text" id="from" placeholder="Откуда" />
+    <input type="text" id="to" placeholder="Куда" />
+
+    <select id="tariff">
+      <option value="economy">Эконом</option>
+      <option value="comfort">Комфорт</option>
+      <option value="business">Бизнес</option>
+    </select>
+
+    <button onclick="orderTaxi()">Заказать</button>
+
+    <small>Нажмите на карту, чтобы выбрать точки маршрута</small>
+    <div id="map"></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    // Инициализация карты
+    var map = L.map('map').setView([55.751244, 37.618423], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    let pointStep = 0; // 0 — выбираем "Откуда", 1 — "Куда"
+    let markers = [];
+
+    // При клике на карту — выбираем точку
+    map.on('click', function(e) {
+      const coords = `${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
+
+      // Добавляем маркер
+      if (markers[pointStep]) {
+        map.removeLayer(markers[pointStep]);
+      }
+      markers[pointStep] = L.marker(e.latlng).addTo(map);
+
+      // Заполняем поля
+      if (pointStep === 0) {
+        document.getElementById('from').value = coords;
+        pointStep = 1;
+      } else {
+        document.getElementById('to').value = coords;
+        pointStep = 0; // Снова начнём с "Откуда"
+      }
+    });
+
+    // Telegram WebApp
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    function orderTaxi() {
+      let from = document.getElementById('from').value;
+      let to = document.getElementById('to').value;
+      let tariff = document.getElementById('tariff').value;
+
+      if (!from || !to) {
+        alert("Введите оба адреса или выберите точки на карте");
+        return;
+      }
+
+      tg.sendData(JSON.stringify({
+        from: from,
+        to: to,
+        tariff: tariff
+      }));
+
+      tg.close();
+    }
+  </script>
+</body>
+</html>
